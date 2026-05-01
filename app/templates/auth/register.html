@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Criar conta - Tamagotchi{% endblock %}
+
+{% block content %}
+  <section class="auth-panel">
+    <h1>Criar conta</h1>
+    <p class="muted">Crie um usuario para acessar seus pets.</p>
+
+    <form method="post" action="/auth/register">
+      <label>
+        Usuario
+        <input
+          type="text"
+          name="username"
+          autocomplete="username"
+          required
+          maxlength="80"
+        >
+      </label>
+
+      <label>
+        Senha
+        <input
+          type="password"
+          name="password"
+          autocomplete="new-password"
+          required
+          minlength="6"
+        >
+      </label>
+
+      <button type="submit">Criar conta</button>
+    </form>
+
+    <p class="form-footer muted">
+      Ja tem conta? <a href="/auth/login">Entrar</a>
+    </p>
+  </section>
+{% endblock %}

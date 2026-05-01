@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Entrar - Tamagotchi{% endblock %}
+
+{% block content %}
+  <section class="auth-panel">
+    <h1>Entrar</h1>
+    <p class="muted">Acesse sua conta para cuidar dos seus pets.</p>
+
+    <form method="post" action="/auth/login">
+      <label>
+        Usuario
+        <input
+          type="text"
+          name="username"
+          autocomplete="username"
+          required
+          maxlength="80"
+        >
+      </label>
+
+      <label>
+        Senha
+        <input
+          type="password"
+          name="password"
+          autocomplete="current-password"
+          required
+        >
+      </label>
+
+      <button type="submit">Entrar</button>
+    </form>
+
+    <p class="form-footer muted">
+      Ainda nao tem conta? <a href="/auth/register">Criar conta</a>
+    </p>
+  </section>
+{% endblock %}
