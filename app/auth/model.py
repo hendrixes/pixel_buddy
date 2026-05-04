@@ -11,9 +11,10 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
 
-    pets = db.relationship(
+    pet = db.relationship(
         "Pet",
         back_populates="user",
+        uselist=False,
         cascade="all, delete-orphan",
     )
 

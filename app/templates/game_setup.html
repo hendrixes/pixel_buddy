@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Nomear agente - Tamagotchi{% endblock %}
+
+{% block content %}
+  <section class="auth-panel">
+    <h1>Nomear agente</h1>
+
+    <form method="post" action="/game/setup">
+      <label>
+        Nome do pet
+        <input
+          type="text"
+          name="pet_name"
+          required
+          maxlength="80"
+        >
+      </label>
+
+      <button type="submit">Criar pet</button>
+    </form>
+  </section>
+{% endblock %}

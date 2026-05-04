@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-from app.main import app as flask_app, db
+from importlib import import_module
 
-import app.auth.model  # noqa: F401
-import app.pets.model  # noqa: F401
+from app.main import app as flask_app, db
 
 
 def main():
+    import_module("app.auth.model")
+    import_module("app.pets.model")
+
     with flask_app.app_context():
         db.create_all()
 
