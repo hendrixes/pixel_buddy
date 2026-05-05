@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from importlib import import_module
 
 from app.main import app as flask_app, db

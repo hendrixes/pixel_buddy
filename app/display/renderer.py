@@ -9,34 +9,11 @@ HEIGHT = 180
 BACKGROUND = 255
 FOREGROUND = 0
 FONT_NAME = "DejaVuSansMono"
-FONT_FALLBACKS = (
-    "AdwaitaMono",
-    "NotoSansMono",
-    "LiberationMono",
-)
 
 
 def load_font(size, bold=False):
-    for font_name in (FONT_NAME, *FONT_FALLBACKS):
-        if bold:
-            candidates = (
-                f"{font_name}-Bold",
-                font_name,
-                f"{font_name}-Regular",
-            )
-        else:
-            candidates = (
-                font_name,
-                f"{font_name}-Regular",
-            )
-
-        for candidate in candidates:
-            try:
-                return ImageFont.truetype(candidate, size)
-            except OSError:
-                continue
-
-    return ImageFont.load_default()
+    font_name = f"{FONT_NAME}-Bold" if bold else FONT_NAME
+    return ImageFont.truetype(font_name, size)
 
 
 def draw_centered_text(draw, y, text, font):
