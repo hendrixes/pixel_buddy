@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Tamagotchi{% endblock %}</title>
+    <title>{% block title %}pixel_buddy{% endblock %}</title>
     <style>
       :root {
         color-scheme: light;
-        font-family: Arial, Helvetica, sans-serif;
-        background: #f4f6f8;
-        color: #1f2933;
+        font-family: "DejaVu Sans Mono", "Courier New", monospace;
+        background: #f2f2f2;
+        color: #000;
       }
 
       * {
@@ -19,10 +19,16 @@
       body {
         margin: 0;
         min-height: 100vh;
+        background:
+          linear-gradient(#e8e8e8 1px, transparent 1px),
+          linear-gradient(90deg, #e8e8e8 1px, transparent 1px),
+          #f2f2f2;
+        background-size: 24px 24px;
       }
 
       .site-header {
-        background: #17212f;
+        background: #000;
+        border-bottom: 4px solid #000;
         color: #fff;
         padding: 0 24px;
       }
@@ -39,6 +45,7 @@
         color: inherit;
         font-weight: 700;
         text-decoration: none;
+        text-transform: lowercase;
       }
 
       .site-user {
@@ -54,10 +61,15 @@
       }
 
       .logout-button {
-        background: transparent;
-        border: 1px solid rgb(255 255 255 / 45%);
+        background: #fff;
+        border: 2px solid #fff;
+        color: #000;
+        padding: 8px 12px;
+      }
+
+      .logout-button:hover {
+        background: #000;
         color: #fff;
-        padding: 7px 12px;
       }
 
       main {
@@ -69,25 +81,25 @@
         width: min(420px, 100%);
         margin: 0 auto;
         background: #fff;
-        border: 1px solid #d9e2ec;
-        border-radius: 8px;
+        border: 4px solid #000;
+        border-radius: 0;
         padding: 24px;
-        box-shadow: 0 10px 30px rgb(15 23 42 / 8%);
+        box-shadow: 8px 8px 0 #000;
       }
 
       .game-panel {
         width: min(760px, 100%);
         margin: 0 auto;
         background: #fff;
-        border: 1px solid #d9e2ec;
-        border-radius: 8px;
+        border: 4px solid #000;
+        border-radius: 0;
         padding: 28px;
-        box-shadow: 0 10px 30px rgb(15 23 42 / 8%);
+        box-shadow: 8px 8px 0 #000;
       }
 
       .pet-screen {
-        background: #111827;
-        border: 10px solid #111827;
+        background: #000;
+        border: 12px solid #000;
         display: block;
         image-rendering: pixelated;
         width: 100%;
@@ -101,7 +113,14 @@
       }
 
       .game-action-button {
-        background: #111827;
+        background: #000;
+        border: 3px solid #000;
+        color: #fff;
+      }
+
+      .game-action-button:hover {
+        background: #fff;
+        color: #000;
       }
 
       .game-action-button:disabled {
@@ -112,10 +131,16 @@
       h1 {
         margin: 0 0 8px;
         font-size: 1.75rem;
+        text-transform: uppercase;
       }
 
       p {
         line-height: 1.5;
+      }
+
+      a {
+        color: #000;
+        font-weight: 700;
       }
 
       form {
@@ -132,17 +157,24 @@
 
       input {
         width: 100%;
-        border: 1px solid #bcccdc;
-        border-radius: 6px;
+        background: #fff;
+        border: 3px solid #000;
+        border-radius: 0;
+        color: #000;
         font: inherit;
         padding: 10px 12px;
       }
 
+      input:focus {
+        outline: 3px solid #000;
+        outline-offset: 3px;
+      }
+
       button,
       .button-link {
-        border: 0;
-        border-radius: 6px;
-        background: #2563eb;
+        border: 3px solid #000;
+        border-radius: 0;
+        background: #000;
         color: #fff;
         cursor: pointer;
         display: inline-flex;
@@ -151,15 +183,22 @@
         font-weight: 700;
         padding: 10px 14px;
         text-decoration: none;
+        text-transform: uppercase;
+      }
+
+      button:hover,
+      .button-link:hover {
+        background: #fff;
+        color: #000;
       }
 
       .muted {
-        color: #52606d;
+        color: #333;
         margin-bottom: 0;
       }
 
       .form-footer {
-        border-top: 1px solid #e4e7eb;
+        border-top: 3px solid #000;
         margin-top: 20px;
         padding-top: 16px;
       }
@@ -173,10 +212,10 @@
       }
 
       .flash-list li {
-        background: #fff7ed;
-        border: 1px solid #fed7aa;
-        border-radius: 6px;
-        color: #9a3412;
+        background: #fff;
+        border: 3px solid #000;
+        border-radius: 0;
+        color: #000;
         padding: 10px 12px;
       }
     </style>
@@ -184,7 +223,7 @@
   <body>
     <header class="site-header">
       <div class="site-header-inner">
-        <a href="/">Tamagotchi</a>
+        <a href="/">pixel_buddy</a>
 
         {% if current_user.is_authenticated %}
           <div class="site-user">
