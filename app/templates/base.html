@@ -93,6 +93,22 @@
         width: 100%;
       }
 
+      .game-actions {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-top: 18px;
+      }
+
+      .game-action-button {
+        background: #111827;
+      }
+
+      .game-action-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
       h1 {
         margin: 0 0 8px;
         font-size: 1.75rem;

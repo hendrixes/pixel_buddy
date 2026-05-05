@@ -3,6 +3,7 @@ FACES = {
     "happy": "(^‿^)",
     "curious": "(◕‿◕)",
     "tired": "(⇀‿↼)",
+    "hungry": "(•︿•)",
     "confused": "(#__#)",
     "cool": "(⌐■_■)",
 }
