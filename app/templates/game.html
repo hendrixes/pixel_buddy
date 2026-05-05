@@ -3,16 +3,20 @@
 {% block title %}Game - Tamagotchi{% endblock %}
 
 {% block content %}
-  <section class="auth-panel">
-    <header style="background: transparent; color: inherit; padding: 0; margin-bottom: 24px;">
-      <h1>Game</h1>
-      <p class="muted">Logado como {{ current_user.username }}</p>
-
-      <form method="post" action="/auth/logout" style="margin-top: 16px;">
-        <button type="submit">Sair</button>
-      </form>
-    </header>
-
-    <p>not implemented yet :)</p>
+  <section class="game-panel">
+    <img
+      id="pet-screen"
+      src="/game/screen.png"
+      alt="Tela do pet"
+      class="pet-screen"
+    >
   </section>
+
+  <script>
+    const petScreen = document.getElementById("pet-screen");
+
+    setInterval(() => {
+      petScreen.src = "/game/screen.png?t=" + Date.now();
+    }, 1000);
+  </script>
 {% endblock %}

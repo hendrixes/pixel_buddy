@@ -1,8 +1,9 @@
-from flask import Flask, redirect, render_template, url_for, request, flash
+from flask import Flask, redirect, render_template, send_file, url_for, request, flash
 from flask_login import current_user, login_required
 
 from app.api import api
 from app.auth import auth
+from app.display import render_pet_screen
 from app.pets import pets
 from app.core import db
 from app.core import login_manager
@@ -42,6 +43,17 @@ def game_setup():
     db.session.commit()
 
     return redirect(url_for("game"))
+
+
+@app.route("/game/screen.png")
+@login_required
+def render_screen():
+    if not current_user.pet:
+        return redirect(url_for("game"))
+
+    image = render_pet_screen(current_user.pet)
+
+    return send_file(image, mimetype="image/png", max_age=0)
 
 
 @app.route("/game")
