@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 
-TICK_RATE_SECONDS = 5
+TICK_RATE_SECONDS = 60
 
 
 def utc_now():
