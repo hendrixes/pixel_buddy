@@ -8,6 +8,7 @@ from app.pets import pets
 from app.core import db
 from app.core import login_manager
 from app.pets import Pet
+from app.pets.service import tick_pet
 
 app = Flask(__name__)
 
@@ -51,6 +52,9 @@ def render_screen():
     if not current_user.pet:
         return redirect(url_for("game"))
 
+    if tick_pet(current_user.pet):
+        db.session.commit()
+
     image = render_pet_screen(current_user.pet)
 
     return send_file(image, mimetype="image/png", max_age=0)
@@ -61,5 +65,8 @@ def render_screen():
 def game():
     if not current_user.pet:
         return render_template("game_setup.html")
+
+    if tick_pet(current_user.pet):
+        db.session.commit()
 
     return render_template("game.html")

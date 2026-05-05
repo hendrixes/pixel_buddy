@@ -7,6 +7,7 @@ from app.pets.service import (
     observe_network,
     play_pet,
     sleep_pet,
+    tick_pet,
 )
 
 
@@ -17,6 +18,8 @@ def run_pet_action(action):
     pet = current_user.pet
     if not pet:
         return jsonify({"error": "pet_not_found"}), 404
+
+    tick_pet(pet)
     action(pet)
     db.session.commit()
     return jsonify(pet.to_dict())

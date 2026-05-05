@@ -38,16 +38,21 @@ def render_pet_screen(pet):
     draw.line((8, 136, WIDTH - 9, 136), fill=FOREGROUND, width=1)
 
     draw.text((12, 8), f"{pet.name}>", font=text_font, fill=FOREGROUND)
-    draw.text((238, 8), f"XP {pet.network_xp}", font=text_font, fill=FOREGROUND)
+    draw.text((238, 8), f"XP {pet.network_xp}",
+              font=text_font, fill=FOREGROUND)
 
     face = get_face(pet.mood)
     draw_centered_text(draw, 82, face, face_font)
 
-    draw.text((12, 116), f"MOOD {pet.mood.upper()}", font=small_font, fill=FOREGROUND)
+    draw.text((12, 116), f"MOOD {pet.mood.upper()}",
+              font=small_font, fill=FOREGROUND)
     draw.text((12, 146), f"ENG {pet.energy}", font=small_font, fill=FOREGROUND)
-    draw.text((84, 146), f"HAP {pet.happiness}", font=small_font, fill=FOREGROUND)
-    draw.text((164, 146), f"CUR {pet.curiosity}", font=small_font, fill=FOREGROUND)
-    draw.text((240, 146), f"HUN {pet.hunger}", font=small_font, fill=FOREGROUND)
+    draw.text((84, 146), f"HAP {pet.happiness}",
+              font=small_font, fill=FOREGROUND)
+    draw.text((164, 146), f"CUR {pet.curiosity}",
+              font=small_font, fill=FOREGROUND)
+    draw.text((240, 146), f"HUN {pet.hunger}",
+              font=small_font, fill=FOREGROUND)
 
     image = image.point(lambda value: 0 if value < 210 else 255)
 
