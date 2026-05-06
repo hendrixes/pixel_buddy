@@ -38,6 +38,7 @@ app-game/target/
 *.log
 
 # Local editor / tool state
+.worktrees/
 .agents/
 .codex/
 .vscode/
