@@ -12,59 +12,18 @@
     >
 
     <div class="game-actions">
-      <button class="game-action-button" type="button" data-action="feed">
-        Feed
-      </button>
-      <button class="game-action-button" type="button" data-action="play">
-        Play
-      </button>
-      <button class="game-action-button" type="button" data-action="sleep">
-        Sleep
-      </button>
-      <button class="game-action-button" type="button" data-action="observe">
-        Observe
-      </button>
+      <a class="button-link" href="/agents">Agents</a>
+      <a class="button-link" href="/blocked-ips">Blocklist</a>
+      <a class="button-link" href="/leaderboard">Ranking</a>
     </div>
   </section>
 
   <script>
     const petScreen = document.getElementById("pet-screen");
-    const actionButtons = document.querySelectorAll("[data-action]");
 
     function refreshScreen() {
       petScreen.src = "/game/screen.png?t=" + Date.now();
     }
-
-    function setActionsDisabled(disabled) {
-      actionButtons.forEach((button) => {
-        button.disabled = disabled;
-      });
-    }
-
-    async function runAction(action) {
-      setActionsDisabled(true);
-
-      try {
-        const response = await fetch(`/pets/action/${action}`, {
-          method: "POST",
-          credentials: "same-origin",
-        });
-
-        if (!response.ok) {
-          return;
-        }
-
-        refreshScreen();
-      } finally {
-        setActionsDisabled(false);
-      }
-    }
-
-    actionButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        runAction(button.dataset.action);
-      });
-    });
 
     setInterval(() => {
       refreshScreen();

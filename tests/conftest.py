@@ -8,6 +8,7 @@ from app.auth import auth
 from app.auth.model import User
 from app.core import db, login_manager, register_csrf
 from app.firewall import agent_api, firewall
+from app.main import game, leaderboard
 from app.pets import pets
 from app.pets.model import Pet
 
@@ -35,9 +36,8 @@ def app():
     def index():
         return "ok"
 
-    @test_app.route("/game")
-    def game():
-        return "game"
+    test_app.add_url_rule("/game", view_func=game)
+    test_app.add_url_rule("/leaderboard", view_func=leaderboard)
 
     with test_app.app_context():
         db.create_all()

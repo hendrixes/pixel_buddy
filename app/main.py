@@ -2,7 +2,7 @@ from flask import Flask, redirect, render_template, send_file, url_for, request,
 from flask_login import current_user, login_required
 
 from app.api import api
-from app.auth import auth
+from app.auth import User, auth
 from app.firewall import agent_api, firewall
 from app.display import render_pet_screen
 from app.pets import pets
@@ -75,3 +75,15 @@ def game():
         db.session.commit()
 
     return render_template("game.html")
+
+
+@app.route("/leaderboard")
+@login_required
+def leaderboard():
+    users = (
+        User.query.join(Pet)
+        .order_by(Pet.network_xp.desc())
+        .limit(20)
+        .all()
+    )
+    return render_template("leaderboard.html", users=users)

@@ -51,7 +51,9 @@
       .site-user {
         align-items: center;
         display: flex;
+        flex-wrap: wrap;
         gap: 16px;
+        justify-content: flex-end;
         font-size: 0.95rem;
       }
 
@@ -108,7 +110,7 @@
       .game-actions {
         display: grid;
         gap: 10px;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         margin-top: 18px;
       }
 
@@ -247,6 +249,10 @@
 
         {% if current_user.is_authenticated %}
           <div class="site-user">
+            <a href="/game">Game</a>
+            <a href="/agents">Agents</a>
+            <a href="/blocked-ips">Blocklist</a>
+            <a href="/leaderboard">Ranking</a>
             <span>Logado como {{ current_user.username }}</span>
 
             <form class="logout-form" method="post" action="/auth/logout">
