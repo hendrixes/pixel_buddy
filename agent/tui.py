@@ -1,12 +1,19 @@
 import curses
 from pathlib import Path
+import time
 from textwrap import wrap
 
 from scapy.all import sniff
 
 from agent.analyzer import PacketAnalyzer
 from agent.config import AgentConfig, default_config_path, load_config, save_config
-from agent.runtime import FACES, build_packet_handler, handle_event
+from agent.runtime import (
+    BLOCKLIST_SYNC_INTERVAL_SECONDS,
+    FACES,
+    build_packet_handler,
+    handle_event,
+    sync_blocklist,
+)
 
 
 def draw_lines(stdscr, lines):
@@ -102,6 +109,8 @@ def monitor_live(stdscr, config):
         ignored_ports=config.ignored_ports,
     )
     last_event = None
+    synced_blocklist_ips = set()
+    last_blocklist_sync = 0
 
     def tui_event_handler(active_config, event):
         nonlocal last_event
@@ -111,6 +120,10 @@ def monitor_live(stdscr, config):
             renderer=lambda _status, _event: None,
         )
         return last_event
+
+    def tui_sync_renderer(_status, event):
+        nonlocal last_event
+        last_event = event
 
     handler = build_packet_handler(
         config=config,
@@ -124,6 +137,14 @@ def monitor_live(stdscr, config):
             draw_menu(stdscr, config, "monitoring - press q to stop", last_event)
             if stdscr.getch() == ord("q"):
                 break
+            now = time.monotonic()
+            if now - last_blocklist_sync >= BLOCKLIST_SYNC_INTERVAL_SECONDS:
+                synced_blocklist_ips = sync_blocklist(
+                    config,
+                    synced_blocklist_ips,
+                    renderer=tui_sync_renderer,
+                )
+                last_blocklist_sync = now
             sniff(iface=config.interface, prn=handler, store=False, timeout=1)
     finally:
         stdscr.nodelay(False)

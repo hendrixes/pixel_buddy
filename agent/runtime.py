@@ -1,6 +1,7 @@
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 import json
+import time
 
 from scapy.all import sniff
 
@@ -13,6 +14,7 @@ FACES = {
     "alert": "(⊙_⊙)",
     "angry": "(ಠ_ಠ)",
 }
+BLOCKLIST_SYNC_INTERVAL_SECONDS = 10
 
 
 def render_terminal(status, event=None):
@@ -45,6 +47,72 @@ def post_event(server, token, event):
     )
     with urlopen(request, timeout=5) as response:
         return response.status
+
+
+def fetch_blocked_ips(server, token):
+    request = Request(
+        f"{server.rstrip('/')}/api/agent/blocked-ips",
+        headers={"Authorization": f"Bearer {token}"},
+        method="GET",
+    )
+    with urlopen(request, timeout=5) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    return payload.get("blocked_ips", [])
+
+
+def blocklist_event(rule, action, summary):
+    return {
+        "event_type": "manual_block_sync",
+        "source_ip": rule["ip_address"],
+        "destination_port": None,
+        "packet_count": 0,
+        "action": action,
+        "summary": summary,
+    }
+
+
+def sync_blocklist(
+    config,
+    applied_ips=None,
+    fetcher=fetch_blocked_ips,
+    blocker=block_ip,
+    reporter=post_event,
+    renderer=render_terminal,
+):
+    synced_ips = set(applied_ips or set())
+
+    try:
+        rules = fetcher(config.server, config.token)
+    except (HTTPError, URLError, TimeoutError) as exc:
+        print(f"blocklist sync failed: {exc}")
+        return synced_ips
+
+    for rule in rules:
+        source_ip = rule["ip_address"]
+        if source_ip in synced_ips:
+            continue
+
+        try:
+            action = blocker(source_ip, config.mode)
+            summary = f"manual blocklist rule {rule['id']} applied"
+        except Exception as exc:
+            action = "block_failed"
+            summary = f"manual blocklist rule {rule['id']} failed: {exc}"
+
+        event = blocklist_event(rule, action, summary)
+        status = "angry" if action == "blocked" else "alert"
+        renderer(status, event)
+
+        try:
+            reporter(config.server, config.token, event)
+        except (HTTPError, URLError, TimeoutError) as exc:
+            print(f"report failed: {exc}")
+
+        if action in {"blocked", "reported"}:
+            synced_ips.add(source_ip)
+
+    return synced_ips
 
 
 def should_ignore_event(config, event):
@@ -107,8 +175,14 @@ def build_packet_handler(config, analyzer=None, event_handler=handle_event):
 
 
 def run_live_monitor(config, event_handler=handle_event):
-    sniff(
-        iface=config.interface,
-        prn=build_packet_handler(config, event_handler=event_handler),
-        store=False,
-    )
+    synced_blocklist_ips = set()
+    last_blocklist_sync = 0
+    handler = build_packet_handler(config, event_handler=event_handler)
+
+    while True:
+        now = time.monotonic()
+        if now - last_blocklist_sync >= BLOCKLIST_SYNC_INTERVAL_SECONDS:
+            synced_blocklist_ips = sync_blocklist(config, synced_blocklist_ips)
+            last_blocklist_sync = now
+
+        sniff(iface=config.interface, prn=handler, store=False, timeout=1)

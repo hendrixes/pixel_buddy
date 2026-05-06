@@ -22,6 +22,13 @@ On first run, use the configure option to set:
 The config is saved at `~/.config/pixel_buddy/agent.json` with `0600`
 permissions.
 
+When live monitoring is running, the agent also syncs active blocklist records
+from the Flask API. Manual IPs added in `/blocked-ips` are fetched through the
+agent token and applied locally:
+
+- `dry-run`: reports that it would apply the rule
+- `ufw`: runs `ufw deny from <ip>`
+
 TUI actions:
 
 - `s`: start live Scapy monitoring

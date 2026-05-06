@@ -115,3 +115,57 @@ def test_agent_event_api_rejects_long_summary(client, app):
     assert agent.last_seen_at is None
     assert FirewallEvent.query.count() == 0
     assert BlockedIP.query.count() == 0
+
+
+def test_agent_blocklist_api_requires_token(client, app):
+    response = client.get("/api/agent/blocked-ips")
+
+    assert response.status_code == 401
+
+
+def test_agent_blocklist_api_returns_only_owner_active_ips(client, app):
+    user = create_user(username="alice")
+    other_user = create_user(username="bob")
+    agent, token = create_agent_for_user(user, name="lab-vm", mode="ufw")
+    active_ip = BlockedIP(
+        user_id=user.id,
+        ip_address="192.168.56.10",
+        reason="manual",
+        source="manual",
+        active=True,
+    )
+    inactive_ip = BlockedIP(
+        user_id=user.id,
+        ip_address="192.168.56.11",
+        reason="old",
+        source="manual",
+        active=False,
+    )
+    other_user_ip = BlockedIP(
+        user_id=other_user.id,
+        ip_address="192.168.56.12",
+        reason="other user",
+        source="manual",
+        active=True,
+    )
+    db.session.add_all([active_ip, inactive_ip, other_user_ip])
+    db.session.commit()
+
+    response = client.get(
+        "/api/agent/blocked-ips",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    db.session.refresh(agent)
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "blocked_ips": [
+            {
+                "id": active_ip.id,
+                "ip_address": "192.168.56.10",
+                "reason": "manual",
+                "source": "manual",
+            }
+        ]
+    }
+    assert agent.last_seen_at is not None

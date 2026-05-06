@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 
 from app.core import db
+from app.firewall.model import BlockedIP
 from app.firewall.service import authenticate_agent_token, record_firewall_event
 
 
@@ -46,3 +47,31 @@ def create_agent_event():
         return jsonify({"error": "invalid_payload", "message": str(exc)}), 400
 
     return jsonify({"id": event.id, "status": "recorded"}), 201
+
+
+@agent_api.route("/blocked-ips")
+def blocked_ips():
+    agent = authenticate_agent_token(get_bearer_token())
+    if not agent:
+        return jsonify({"error": "invalid_agent_token"}), 401
+
+    records = (
+        BlockedIP.query.filter_by(user_id=agent.user_id, active=True)
+        .order_by(BlockedIP.created_at.asc())
+        .all()
+    )
+    db.session.commit()
+
+    return jsonify(
+        {
+            "blocked_ips": [
+                {
+                    "id": record.id,
+                    "ip_address": record.ip_address,
+                    "reason": record.reason,
+                    "source": record.source,
+                }
+                for record in records
+            ]
+        }
+    )
