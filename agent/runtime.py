@@ -98,7 +98,8 @@ def build_packet_handler(config, analyzer=None, event_handler=handle_event):
         if not event:
             return None
 
-        return event_handler(config, event)
+        event_handler(config, event)
+        return None
 
     return handle_packet
 

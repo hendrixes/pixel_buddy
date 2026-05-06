@@ -86,6 +86,26 @@ def test_record_firewall_event_without_block_only_logs_event(app):
     assert user.pet.curiosity > 50
 
 
+def test_reported_agent_event_does_not_create_blocked_ip(app):
+    user = create_user()
+    agent, _token = create_agent_for_user(user, name="lab-vm", mode="dry-run")
+
+    record_firewall_event(
+        agent=agent,
+        payload={
+            "event_type": "possible_dos",
+            "source_ip": "192.168.56.80",
+            "destination_port": 80,
+            "packet_count": 50,
+            "action": "reported",
+            "summary": "dry-run detection",
+        },
+    )
+
+    assert FirewallEvent.query.count() == 1
+    assert BlockedIP.query.count() == 0
+
+
 def test_firewall_moods_have_distinct_faces(app):
     neutral_face = get_face("neutral")
 

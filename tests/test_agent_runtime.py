@@ -98,7 +98,8 @@ def test_build_packet_handler_uses_analyzer_and_event_pipeline():
         analyzer=analyzer,
         event_handler=lambda _config, payload: handled.append(payload),
     )
-    handler(object())
+    result = handler(object())
 
     assert analyzer.packets
     assert handled == [event]
+    assert result is None
