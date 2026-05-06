@@ -33,12 +33,10 @@ def get_owned_blocked_ip(blocked_ip_id):
 
     # codigo vulneravel para demonstracao
     # Correcao: filtrar tambem por user_id=current_user.id
-    # return BlockedIP.query.filter_by(
-    #     id=blocked_ip_id,
-    #     user_id=current_user.id,
-    # ).first_or_404()
-
-    return BlockedIP.query.filter_by(id=blocked_ip_id).first_or_404()
+    return BlockedIP.query.filter_by(
+        id=blocked_ip_id,
+        user_id=current_user.id,
+    ).first_or_404()
 
 
 def parse_positive_form_int(name, default, max_value=None):
