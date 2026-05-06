@@ -9,4 +9,13 @@ dependencies = [
     "flask-login>=0.6.3",
     "flask-sqlalchemy>=3.1.1",
     "pillow>=12.2.0",
+    "scapy>=2.7.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
