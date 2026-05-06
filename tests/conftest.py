@@ -6,8 +6,9 @@ from flask import Flask
 from app.auth import auth
 from app.auth.model import User
 from app.core import db, login_manager, register_csrf
+from app.core.csrf import CSRF_SESSION_KEY
 from app.firewall import agent_api, firewall
-from app.main import game, leaderboard
+from app.main import game, game_setup, leaderboard
 from app.pets.model import Pet
 
 
@@ -33,6 +34,7 @@ def app():
         return "ok"
 
     test_app.add_url_rule("/game", view_func=game)
+    test_app.add_url_rule("/game/setup", methods=["POST"], view_func=game_setup)
     test_app.add_url_rule("/leaderboard", view_func=leaderboard)
 
     with test_app.app_context():
@@ -56,9 +58,17 @@ def create_user(username="alice", password="password"):
     return user
 
 
+def csrf_form(client, **data):
+    token = "known-test-csrf-token"
+    with client.session_transaction() as session:
+        session[CSRF_SESSION_KEY] = token
+
+    return {**data, "csrf_token": token}
+
+
 def login(client, username="alice", password="password"):
     return client.post(
         "/auth/login",
-        data={"username": username, "password": password},
+        data=csrf_form(client, username=username, password=password),
         follow_redirects=True,
     )

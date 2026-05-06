@@ -27,8 +27,7 @@ class Pet(db.Model):
     last_tick_at = db.Column(
         db.DateTime(timezone=True), nullable=False, default=utc_now
     )
-    created_at = db.Column(db.DateTime(timezone=True),
-                           nullable=False, default=utc_now)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utc_now)
 
     user = db.relationship("User", back_populates="pet")
 

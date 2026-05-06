@@ -80,6 +80,25 @@ def test_pcap_upload_without_csrf_is_rejected(client, app, tmp_path):
     assert FirewallEvent.query.count() == 0
 
 
+def test_pcap_upload_rejects_excessive_threshold(client, app, tmp_path):
+    create_user()
+    login(client)
+
+    response = client.post(
+        "/pcaps/upload",
+        data=csrf_form(
+            client,
+            threshold="10001",
+            window="5",
+            pcap_file=(BytesIO(pcap_bytes(tmp_path)), "traffic.pcap"),
+        ),
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 302
+    assert FirewallEvent.query.count() == 0
+
+
 def test_invalid_pcap_upload_is_logged(client, app, caplog):
     create_user()
     login(client)

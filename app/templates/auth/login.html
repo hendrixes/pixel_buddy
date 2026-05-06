@@ -8,6 +8,7 @@
     <p class="muted">Acesse sua conta para cuidar do seu buddy.</p>
 
     <form method="post" action="/auth/login">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label>
         Usuario
         <input

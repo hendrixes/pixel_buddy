@@ -7,6 +7,7 @@
     <h1>Nomear agente</h1>
 
     <form method="post" action="/game/setup">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label>
         Nome do pet
         <input

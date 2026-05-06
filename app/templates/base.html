@@ -256,6 +256,7 @@
             <span>Logado como {{ current_user.username }}</span>
 
             <form class="logout-form" method="post" action="/auth/logout">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="logout-button" type="submit">Sair</button>
             </form>
           </div>

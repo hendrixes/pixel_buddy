@@ -1,12 +1,15 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
+from app.auth.model import User
+from app.core import validate_csrf
 from app.core.db import db
 from app.core.login import login_manager
-from app.auth.model import User
 
 
 auth = Blueprint("auth", import_name=__name__, url_prefix="/auth")
+MAX_USERNAME_LENGTH = 80
+MIN_PASSWORD_LENGTH = 6
 
 
 @login_manager.user_loader
@@ -16,7 +19,7 @@ def load_user(user_id):
 
 @login_manager.unauthorized_handler
 def unauthorized():
-    flash("faz login ae caralho")
+    flash("Faca login para continuar.")
     return redirect(url_for("auth.login"))
 
 
@@ -26,17 +29,26 @@ def register():
         return redirect(url_for("game"))
 
     if request.method == "POST":
+        validate_csrf()
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
         if not username or not password:
-            flash("preenche os dois ae caralho")
+            flash("Preencha usuario e senha.")
+            return render_template("auth/register.html")
+
+        if len(username) > MAX_USERNAME_LENGTH:
+            flash("Usuario deve ter no maximo 80 caracteres.")
+            return render_template("auth/register.html")
+
+        if len(password) < MIN_PASSWORD_LENGTH:
+            flash("Senha deve ter pelo menos 6 caracteres.")
             return render_template("auth/register.html")
 
         existing_user = User.query.filter_by(username=username).first()
 
         if existing_user:
-            flash("ja existe esse mano ae tio")
+            flash("Usuario ja existe.")
             return render_template("auth/register.html")
 
         user = User(username=username)
@@ -58,13 +70,14 @@ def login():
         return redirect(url_for("index"))
 
     if request.method == "POST":
+        validate_csrf()
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
         user = User.query.filter_by(username=username).first()
 
         if not user or not user.check_password(password):
-            flash("ta errado esse bagulho ae tio")
+            flash("Usuario ou senha invalidos.")
             return render_template("auth/login.html")
 
         login_user(user)
@@ -76,6 +89,7 @@ def login():
 @auth.route("/logout", methods=["POST"])
 @login_required
 def logout():
+    validate_csrf()
     logout_user()
-    flash("voce deslogo no bagulho")
+    flash("Sessao encerrada.")
     return redirect(url_for("auth.login"))

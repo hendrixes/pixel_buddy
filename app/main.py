@@ -1,20 +1,28 @@
-from flask import Flask, redirect, render_template, send_file, url_for, request, flash
+import os
+
+from flask import Flask, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
 from app.auth import User, auth
-from app.firewall import agent_api, firewall
+from app.core import db, login_manager, register_csrf, validate_csrf
 from app.display import render_pet_screen
-from app.core import db
-from app.core import login_manager
-from app.core import register_csrf
+from app.firewall import agent_api, firewall
 from app.pets import Pet
 from app.pets.service import tick_pet
 
 app = Flask(__name__)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
-app.config["SECRET_KEY"] = "chave-secreta"
-app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+    "DATABASE_URL",
+    "sqlite:///database.db",
+)
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+app.config["MAX_CONTENT_LENGTH"] = int(
+    os.environ.get("MAX_CONTENT_LENGTH", 8 * 1024 * 1024)
+)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE") == "1"
 
 app.register_blueprint(auth)
 app.register_blueprint(firewall)
@@ -33,10 +41,11 @@ def index():
 @app.route("/game/setup", methods=["POST"])
 @login_required
 def game_setup():
+    validate_csrf()
     pet_name = request.form.get("pet_name", "").strip()
 
     if not pet_name:
-        flash("digita o nome do baguio ae carai")
+        flash("Informe o nome do buddy.")
         return redirect(url_for("game"))
 
     if current_user.pet:

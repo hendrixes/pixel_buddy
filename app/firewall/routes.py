@@ -1,7 +1,15 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
@@ -17,16 +25,23 @@ from app.firewall.service import (
 
 firewall = Blueprint("firewall", __name__)
 ALLOWED_PCAP_EXTENSIONS = {".pcap", ".pcapng", ".cap"}
+MAX_PCAP_THRESHOLD = 10000
+MAX_PCAP_WINDOW_SECONDS = 3600
 
 
 def get_owned_blocked_ip(blocked_ip_id):
-    return BlockedIP.query.filter_by(
-        id=blocked_ip_id,
-        user_id=current_user.id,
-    ).first_or_404()
+
+    # codigo vulneravel para demonstracao
+    # Correcao: filtrar tambem por user_id=current_user.id
+    # return BlockedIP.query.filter_by(
+    #     id=blocked_ip_id,
+    #     user_id=current_user.id,
+    # ).first_or_404()
+
+    return BlockedIP.query.filter_by(id=blocked_ip_id).first_or_404()
 
 
-def parse_positive_form_int(name, default):
+def parse_positive_form_int(name, default, max_value=None):
     raw_value = request.form.get(name, str(default)).strip()
     try:
         value = int(raw_value)
@@ -35,6 +50,9 @@ def parse_positive_form_int(name, default):
 
     if value <= 0:
         raise ValueError(f"{name} precisa ser positivo")
+
+    if max_value is not None and value > max_value:
+        raise ValueError(f"{name} precisa ser no maximo {max_value}")
 
     return value
 
@@ -102,10 +120,13 @@ def update_blocked_ip(blocked_ip_id):
     blocked_ip = get_owned_blocked_ip(blocked_ip_id)
 
     try:
-        blocked_ip.ip_address = validate_ip(request.form.get("ip_address", "").strip())
+        blocked_ip.ip_address = validate_ip(
+            request.form.get("ip_address", "").strip())
     except ValueError:
         flash("IP invalido")
-        return redirect(url_for("firewall.edit_blocked_ip", blocked_ip_id=blocked_ip.id))
+        return redirect(
+            url_for("firewall.edit_blocked_ip", blocked_ip_id=blocked_ip.id)
+        )
 
     blocked_ip.reason = request.form.get("reason", "").strip() or "manual"
     blocked_ip.notes = request.form.get("notes", "").strip()
@@ -184,8 +205,16 @@ def upload_pcap():
         return redirect(url_for("firewall.upload_pcap_form"))
 
     try:
-        threshold = parse_positive_form_int("threshold", 50)
-        window = parse_positive_form_int("window", 5)
+        threshold = parse_positive_form_int(
+            "threshold",
+            50,
+            max_value=MAX_PCAP_THRESHOLD,
+        )
+        window = parse_positive_form_int(
+            "window",
+            5,
+            max_value=MAX_PCAP_WINDOW_SECONDS,
+        )
     except ValueError as exc:
         flash(str(exc))
         return redirect(url_for("firewall.upload_pcap_form"))
