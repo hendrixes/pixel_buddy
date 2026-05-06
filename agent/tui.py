@@ -1,5 +1,6 @@
 import curses
 from pathlib import Path
+from textwrap import wrap
 
 from scapy.all import sniff
 
@@ -10,8 +11,11 @@ from agent.runtime import FACES, build_packet_handler, handle_event
 
 def draw_lines(stdscr, lines):
     stdscr.erase()
+    max_width = max(1, curses.COLS - 1)
     for y, line in enumerate(lines):
-        stdscr.addstr(y, 0, line)
+        if y >= curses.LINES - 1:
+            break
+        stdscr.addstr(y, 0, line[:max_width])
     stdscr.refresh()
 
 
@@ -57,10 +61,13 @@ def draw_menu(stdscr, config, message="", last_event=None):
                 "",
                 f"last event: {last_event['event_type']}",
                 f"source: {last_event['source_ip']}",
+                f"port: {last_event.get('destination_port') or '-'}",
                 f"packets: {last_event['packet_count']}",
                 f"action: {last_event['action']}",
             ]
         )
+        for line in wrap(f"summary: {last_event['summary']}", width=72):
+            lines.append(line)
 
     draw_lines(stdscr, lines)
 
@@ -92,6 +99,7 @@ def monitor_live(stdscr, config):
         protected_ip=config.protected_ip,
         threshold=config.threshold,
         window_seconds=config.window,
+        ignored_ports=config.ignored_ports,
     )
     last_event = None
 

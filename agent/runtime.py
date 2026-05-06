@@ -26,8 +26,10 @@ def render_terminal(status, event=None):
     if event:
         print(f"event: {event['event_type']}")
         print(f"source: {event['source_ip']}")
+        print(f"port: {event.get('destination_port') or '-'}")
         print(f"packets: {event['packet_count']}")
         print(f"action: {event['action']}")
+        print(f"summary: {event['summary']}")
 
 
 def post_event(server, token, event):
