@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
 
 from app.api import api
 from app.auth import auth
-from app.firewall import firewall
+from app.firewall import agent_api, firewall
 from app.display import render_pet_screen
 from app.pets import pets
 from app.core import db
@@ -21,6 +21,7 @@ app.register_blueprint(pets)
 app.register_blueprint(auth)
 app.register_blueprint(api)
 app.register_blueprint(firewall)
+app.register_blueprint(agent_api)
 
 db.init_app(app)
 login_manager.init_app(app)

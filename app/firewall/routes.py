@@ -2,8 +2,8 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.core import db, validate_csrf
-from app.firewall.model import BlockedIP
-from app.firewall.service import validate_ip
+from app.firewall.model import Agent, BlockedIP
+from app.firewall.service import create_agent_for_user, validate_ip
 
 
 firewall = Blueprint("firewall", __name__)
@@ -101,3 +101,38 @@ def delete_blocked_ip(blocked_ip_id):
     db.session.commit()
     flash("IP bloqueado removido")
     return redirect(url_for("firewall.blocked_ips"))
+
+
+@firewall.route("/agents")
+@login_required
+def agents():
+    records = (
+        Agent.query.filter_by(user_id=current_user.id)
+        .order_by(Agent.created_at.desc())
+        .all()
+    )
+    return render_template("firewall/agents.html", agents=records, created_token=None)
+
+
+@firewall.route("/agents", methods=["POST"])
+@login_required
+def create_agent():
+    validate_csrf()
+    name = request.form.get("name", "").strip()
+    mode = request.form.get("mode", "dry-run")
+
+    if not name:
+        flash("Nome do agente obrigatorio")
+        return redirect(url_for("firewall.agents"))
+
+    if mode not in {"dry-run", "ufw"}:
+        flash("Modo invalido")
+        return redirect(url_for("firewall.agents"))
+
+    _agent, token = create_agent_for_user(current_user, name=name, mode=mode)
+    records = (
+        Agent.query.filter_by(user_id=current_user.id)
+        .order_by(Agent.created_at.desc())
+        .all()
+    )
+    return render_template("firewall/agents.html", agents=records, created_token=token)

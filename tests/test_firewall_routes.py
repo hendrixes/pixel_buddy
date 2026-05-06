@@ -1,6 +1,6 @@
 from app.core import db
 from app.core.csrf import CSRF_SESSION_KEY
-from app.firewall.model import BlockedIP
+from app.firewall.model import Agent, BlockedIP
 from tests.conftest import create_user, login
 
 
@@ -175,3 +175,35 @@ def test_blocked_ip_delete_idor_is_blocked(client, app):
 
     assert response.status_code == 404
     assert db.session.get(BlockedIP, blocked_ip_id) is not None
+
+
+def test_agent_create_without_csrf_is_rejected(client, app):
+    create_user()
+    login(client)
+
+    response = client.post(
+        "/agents",
+        data={"name": "lab-vm", "mode": "dry-run"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 400
+    assert Agent.query.filter_by(name="lab-vm").first() is None
+
+
+def test_agent_create_with_csrf_returns_token(client, app):
+    create_user()
+    login(client)
+
+    response = client.post(
+        "/agents",
+        data=csrf_form(client, name="lab-vm", mode="dry-run"),
+        follow_redirects=False,
+    )
+
+    agent = Agent.query.filter_by(name="lab-vm").first()
+
+    assert response.status_code == 200
+    assert agent is not None
+    assert b"Novo token:" in response.data
+    assert agent.token_hash.encode() not in response.data

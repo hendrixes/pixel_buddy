@@ -88,6 +88,19 @@ def validate_event_type(value):
     return event_type
 
 
+def validate_summary(value):
+    if value is None:
+        return ""
+
+    if not isinstance(value, str):
+        raise ValueError("summary must be a string")
+
+    if len(value) > 255:
+        raise ValueError("summary must be 255 characters or fewer")
+
+    return value
+
+
 def update_pet_from_firewall_event(pet, event):
     if not pet:
         return
@@ -110,6 +123,7 @@ def record_firewall_event(agent, payload):
     packet_count = validate_packet_count(payload.get("packet_count", 0))
     destination_port = validate_destination_port(payload.get("destination_port"))
     event_type = validate_event_type(payload.get("event_type"))
+    summary = validate_summary(payload.get("summary", ""))
     event = FirewallEvent(
         user_id=agent.user_id,
         agent_id=agent.id,
@@ -118,7 +132,7 @@ def record_firewall_event(agent, payload):
         destination_port=destination_port,
         packet_count=packet_count,
         action=action,
-        summary=payload.get("summary", ""),
+        summary=summary,
     )
     db.session.add(event)
 

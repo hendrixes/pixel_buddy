@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from flask import Flask
 
@@ -5,14 +7,15 @@ from app.api import api
 from app.auth import auth
 from app.auth.model import User
 from app.core import db, login_manager, register_csrf
-from app.firewall import firewall
+from app.firewall import agent_api, firewall
 from app.pets import pets
 from app.pets.model import Pet
 
 
 @pytest.fixture()
 def app():
-    test_app = Flask(__name__)
+    template_folder = Path(__file__).resolve().parents[1] / "app" / "templates"
+    test_app = Flask(__name__, template_folder=template_folder)
     test_app.config.update(
         TESTING=True,
         SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
@@ -26,6 +29,7 @@ def app():
     test_app.register_blueprint(auth)
     test_app.register_blueprint(api)
     test_app.register_blueprint(firewall)
+    test_app.register_blueprint(agent_api)
 
     @test_app.route("/")
     def index():
