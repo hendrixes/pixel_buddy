@@ -6,6 +6,7 @@ from app.main import app as flask_app, db
 def main():
     import_module("app.auth.model")
     import_module("app.pets.model")
+    import_module("app.firewall.model")
 
     with flask_app.app_context():
         db.create_all()

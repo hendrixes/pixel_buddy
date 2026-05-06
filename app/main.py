@@ -2,11 +2,13 @@ from flask import Flask, redirect, render_template, send_file, url_for, request,
 from flask_login import current_user, login_required
 
 from app.api import api
-from app.auth import auth
+from app.auth import User, auth
+from app.firewall import agent_api, firewall
 from app.display import render_pet_screen
 from app.pets import pets
 from app.core import db
 from app.core import login_manager
+from app.core import register_csrf
 from app.pets import Pet
 from app.pets.service import tick_pet
 
@@ -18,9 +20,12 @@ app.config["SECRET_KEY"] = "chave-secreta"
 app.register_blueprint(pets)
 app.register_blueprint(auth)
 app.register_blueprint(api)
+app.register_blueprint(firewall)
+app.register_blueprint(agent_api)
 
 db.init_app(app)
 login_manager.init_app(app)
+register_csrf(app)
 
 
 @app.route("/")
@@ -70,3 +75,15 @@ def game():
         db.session.commit()
 
     return render_template("game.html")
+
+
+@app.route("/leaderboard")
+@login_required
+def leaderboard():
+    users = (
+        User.query.join(Pet)
+        .order_by(Pet.network_xp.desc())
+        .limit(20)
+        .all()
+    )
+    return render_template("leaderboard.html", users=users)

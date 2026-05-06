@@ -8,6 +8,7 @@ WIDTH = 320
 HEIGHT = 180
 BACKGROUND = 255
 FOREGROUND = 0
+BLACK = FOREGROUND
 FONT_NAME = "DejaVuSansMono"
 
 
@@ -30,6 +31,7 @@ def render_pet_screen(pet):
     draw = ImageDraw.Draw(image)
 
     small_font = load_font(12)
+    medium_font = load_font(12)
     text_font = load_font(14, bold=True)
     face_font = load_font(36, bold=True)
 
@@ -46,13 +48,15 @@ def render_pet_screen(pet):
 
     draw.text((12, 116), f"MOOD {pet.mood.upper()}",
               font=small_font, fill=FOREGROUND)
-    draw.text((12, 146), f"ENG {pet.energy}", font=small_font, fill=FOREGROUND)
-    draw.text((84, 146), f"HAP {pet.happiness}",
-              font=small_font, fill=FOREGROUND)
-    draw.text((164, 146), f"CUR {pet.curiosity}",
-              font=small_font, fill=FOREGROUND)
-    draw.text((240, 146), f"HUN {pet.hunger}",
-              font=small_font, fill=FOREGROUND)
+    draw.text((12, 146), f"ENG {pet.energy}", font=medium_font, fill=BLACK)
+    draw.text((88, 146), f"XP {pet.network_xp}", font=medium_font, fill=BLACK)
+    draw.text((156, 146), f"CUR {pet.curiosity}", font=medium_font, fill=BLACK)
+    draw.text(
+        (240, 146),
+        f"MOOD {pet.mood[:5].upper()}",
+        font=medium_font,
+        fill=BLACK,
+    )
 
     image = image.point(lambda value: 0 if value < 210 else 255)
 

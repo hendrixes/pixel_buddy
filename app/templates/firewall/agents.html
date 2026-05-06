@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Agents - pixel_buddy{% endblock %}
+{% block content %}
+  <section class="game-panel">
+    <h1>agents</h1>
+    {% if created_token %}
+      <div class="flash-list">
+        <li>Novo token: <strong>{{ created_token }}</strong></li>
+      </div>
+    {% endif %}
+    <form method="post" action="/agents">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>
+        Nome
+        <input name="name" required>
+      </label>
+      <label>
+        Modo
+        <select name="mode">
+          <option value="dry-run">dry-run</option>
+          <option value="ufw">ufw</option>
+        </select>
+      </label>
+      <button type="submit">Criar agente</button>
+    </form>
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Modo</th>
+          <th>Ultimo contato</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for agent in agents %}
+          <tr>
+            <td>{{ agent.name }}</td>
+            <td>{{ agent.mode }}</td>
+            <td>{{ agent.last_seen_at or "-" }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="3">Nenhum agente cadastrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

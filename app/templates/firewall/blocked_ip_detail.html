@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ blocked_ip.ip_address }} - pixel_buddy{% endblock %}
+{% block content %}
+  <section class="game-panel">
+    <h1>{{ blocked_ip.ip_address }}</h1>
+    <p>Motivo: {{ blocked_ip.reason }}</p>
+    <p>Origem: {{ blocked_ip.source }}</p>
+    <p>Status: {{ "ativo" if blocked_ip.active else "inativo" }}</p>
+    <p>{{ blocked_ip.notes }}</p>
+    <p><a class="button-link" href="/blocked-ips/{{ blocked_ip.id }}/edit">Editar</a></p>
+    <form method="post" action="/blocked-ips/{{ blocked_ip.id }}/delete">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit">Remover</button>
+    </form>
+  </section>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Blocked IPs - pixel_buddy{% endblock %}
+{% block content %}
+  <section class="game-panel">
+    <h1>blocked ips</h1>
+    <p class="muted">IPs registrados pelo agente ou manualmente.</p>
+    <p><a class="button-link" href="/blocked-ips/new">Novo bloqueio</a></p>
+    <table>
+      <thead>
+        <tr>
+          <th>IP</th>
+          <th>Motivo</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for blocked_ip in blocked_ips %}
+          <tr>
+            <td>{{ blocked_ip.ip_address }}</td>
+            <td>{{ blocked_ip.reason }}</td>
+            <td>{{ "ativo" if blocked_ip.active else "inativo" }}</td>
+            <td><a href="/blocked-ips/{{ blocked_ip.id }}">Ver</a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4">Nenhum IP bloqueado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}
