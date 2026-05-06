@@ -134,13 +134,11 @@ def print_pets(connection):
             pets.name,
             pets.user_id,
             users.username as owner,
-            pets.hunger,
-            pets.happiness,
             pets.energy,
             pets.curiosity,
             pets.network_xp,
             pets.mood,
-            pets.last_network_action_at,
+            pets.last_tick_at,
             pets.created_at
         from pets
         left join users on users.id = pets.user_id
@@ -155,13 +153,42 @@ def print_pets(connection):
             "name",
             "user_id",
             "owner",
-            "hunger",
-            "happiness",
             "energy",
             "curiosity",
             "network_xp",
             "mood",
-            "last_network_action_at",
+            "last_tick_at",
+            "created_at",
+        ),
+    )
+
+
+def print_agents(connection):
+    rows = connection.execute(
+        """
+        select
+            agents.id,
+            agents.name,
+            agents.mode,
+            agents.user_id,
+            users.username as owner,
+            agents.last_seen_at,
+            agents.created_at
+        from agents
+        left join users on users.id = agents.user_id
+        order by agents.created_at desc, agents.id desc
+        """
+    ).fetchall()
+
+    print_rows(
+        rows,
+        (
+            "id",
+            "name",
+            "mode",
+            "user_id",
+            "owner",
+            "last_seen_at",
             "created_at",
         ),
     )
@@ -171,17 +198,23 @@ def print_events(connection):
     rows = connection.execute(
         """
         select
-            network_events.id,
-            network_events.pet_id,
-            pets.name as pet_name,
-            network_events.event_type,
-            network_events.target,
-            network_events.success,
-            network_events.summary,
-            network_events.created_at
-        from network_events
-        left join pets on pets.id = network_events.pet_id
-        order by network_events.created_at desc, network_events.id desc
+            firewall_events.id,
+            firewall_events.user_id,
+            users.username as owner,
+            firewall_events.agent_id,
+            agents.name as agent_name,
+            firewall_events.source,
+            firewall_events.event_type,
+            firewall_events.source_ip,
+            firewall_events.destination_port,
+            firewall_events.packet_count,
+            firewall_events.action,
+            firewall_events.summary,
+            firewall_events.created_at
+        from firewall_events
+        left join users on users.id = firewall_events.user_id
+        left join agents on agents.id = firewall_events.agent_id
+        order by firewall_events.created_at desc, firewall_events.id desc
         """
     ).fetchall()
 
@@ -189,12 +222,52 @@ def print_events(connection):
         rows,
         (
             "id",
-            "pet_id",
-            "pet_name",
+            "user_id",
+            "owner",
+            "agent_id",
+            "agent_name",
+            "source",
             "event_type",
-            "target",
-            "success",
+            "source_ip",
+            "destination_port",
+            "packet_count",
+            "action",
             "summary",
+            "created_at",
+        ),
+    )
+
+
+def print_blocked_ips(connection):
+    rows = connection.execute(
+        """
+        select
+            blocked_ips.id,
+            blocked_ips.user_id,
+            users.username as owner,
+            blocked_ips.agent_id,
+            blocked_ips.ip_address,
+            blocked_ips.reason,
+            blocked_ips.source,
+            blocked_ips.active,
+            blocked_ips.created_at
+        from blocked_ips
+        left join users on users.id = blocked_ips.user_id
+        order by blocked_ips.created_at desc, blocked_ips.id desc
+        """
+    ).fetchall()
+
+    print_rows(
+        rows,
+        (
+            "id",
+            "user_id",
+            "owner",
+            "agent_id",
+            "ip_address",
+            "reason",
+            "source",
+            "active",
             "created_at",
         ),
     )
@@ -221,7 +294,9 @@ def build_parser():
 
     subcommands.add_parser("users", help="List created users.")
     subcommands.add_parser("pets", help="List created pets.")
-    subcommands.add_parser("events", help="List network events.")
+    subcommands.add_parser("agents", help="List registered agents.")
+    subcommands.add_parser("events", help="List firewall events.")
+    subcommands.add_parser("blocked-ips", help="List blocked IP records.")
 
     return parser
 
@@ -241,8 +316,12 @@ def main(argv=None):
             print_users(connection)
         elif args.command == "pets":
             print_pets(connection)
+        elif args.command == "agents":
+            print_agents(connection)
         elif args.command == "events":
             print_events(connection)
+        elif args.command == "blocked-ips":
+            print_blocked_ips(connection)
 
 
 if __name__ == "__main__":

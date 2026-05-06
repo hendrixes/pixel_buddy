@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}PCAP - pixel_buddy{% endblock %}
+{% block content %}
+  <section class="game-panel">
+    <h1>pcap upload</h1>
+    <form method="post" action="/pcaps/upload" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>
+        Arquivo
+        <input name="pcap_file" type="file" accept=".pcap,.pcapng,.cap" required>
+      </label>
+      <label>
+        Threshold
+        <input name="threshold" type="number" min="1" value="50" required>
+      </label>
+      <label>
+        Janela
+        <input name="window" type="number" min="1" value="5" required>
+      </label>
+      <button type="submit">Analyze PCAP</button>
+    </form>
+
+    {% if events is not none %}
+      <h2>resultado</h2>
+      {% if events %}
+        <table>
+          <thead>
+            <tr>
+              <th>Evento</th>
+              <th>Origem</th>
+              <th>Porta</th>
+              <th>Pacotes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for event in events %}
+              <tr>
+                <td>{{ event.event_type }}</td>
+                <td>{{ event.source_ip }}</td>
+                <td>{{ event.destination_port or "-" }}</td>
+                <td>{{ event.packet_count }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p>Nenhum evento detectado.</p>
+      {% endif %}
+    {% endif %}
+  </section>
+{% endblock %}

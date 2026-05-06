@@ -32,6 +32,7 @@ def test_game_dashboard_links_replace_pet_action_buttons(client, app):
     assert response.status_code == 200
     assert b'href="/agents"' in response.data
     assert b'href="/blocked-ips"' in response.data
+    assert b'href="/pcaps/upload"' in response.data
     assert b'href="/leaderboard"' in response.data
     assert b'data-action="feed"' not in response.data
     assert b'data-action="play"' not in response.data

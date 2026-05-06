@@ -8,6 +8,7 @@ from app.pets.service import clamp
 
 
 VALID_ACTIONS = {"reported", "blocked", "block_failed"}
+VALID_EVENT_SOURCES = {"agent", "pcap_upload"}
 
 
 def hash_agent_token(token):
@@ -101,6 +102,13 @@ def validate_summary(value):
     return value
 
 
+def validate_event_source(value):
+    if value not in VALID_EVENT_SOURCES:
+        raise ValueError("event source is not supported")
+
+    return value
+
+
 def update_pet_from_firewall_event(pet, event):
     if not pet:
         return
@@ -112,21 +120,22 @@ def update_pet_from_firewall_event(pet, event):
 
     if event.action == "blocked":
         pet.mood = "angry"
-        pet.happiness = clamp(pet.happiness + 4)
     else:
         pet.mood = "alert"
 
 
-def record_firewall_event(agent, payload):
+def record_firewall_event_for_user(user, payload, source="agent", agent=None):
     source_ip = validate_ip(payload["source_ip"])
     action = validate_action(payload.get("action", "reported"))
     packet_count = validate_packet_count(payload.get("packet_count", 0))
     destination_port = validate_destination_port(payload.get("destination_port"))
     event_type = validate_event_type(payload.get("event_type"))
     summary = validate_summary(payload.get("summary", ""))
+    event_source = validate_event_source(source)
     event = FirewallEvent(
-        user_id=agent.user_id,
-        agent_id=agent.id,
+        user_id=user.id,
+        agent_id=agent.id if agent else None,
+        source=event_source,
         event_type=event_type,
         source_ip=source_ip,
         destination_port=destination_port,
@@ -138,7 +147,7 @@ def record_firewall_event(agent, payload):
 
     if action == "blocked":
         existing_block = BlockedIP.query.filter_by(
-            user_id=agent.user_id,
+            user_id=user.id,
             ip_address=source_ip,
             active=True,
         ).first()
@@ -146,16 +155,25 @@ def record_firewall_event(agent, payload):
         if not existing_block:
             db.session.add(
                 BlockedIP(
-                    user_id=agent.user_id,
-                    agent_id=agent.id,
+                    user_id=user.id,
+                    agent_id=agent.id if agent else None,
                     ip_address=source_ip,
                     reason=event.event_type,
                     notes=event.summary,
-                    source="agent",
+                    source=event_source,
                     active=True,
                 )
             )
 
-    update_pet_from_firewall_event(agent.user.pet, event)
+    update_pet_from_firewall_event(user.pet, event)
     db.session.commit()
     return event
+
+
+def record_firewall_event(agent, payload):
+    return record_firewall_event_for_user(
+        user=agent.user,
+        payload=payload,
+        source="agent",
+        agent=agent,
+    )

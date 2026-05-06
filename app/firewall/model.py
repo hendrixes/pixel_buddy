@@ -32,7 +32,8 @@ class FirewallEvent(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    agent_id = db.Column(db.Integer, db.ForeignKey("agents.id"), nullable=False)
+    agent_id = db.Column(db.Integer, db.ForeignKey("agents.id"), nullable=True)
+    source = db.Column(db.String(20), nullable=False, default="agent")
     event_type = db.Column(db.String(40), nullable=False)
     source_ip = db.Column(db.String(45), nullable=False)
     destination_port = db.Column(db.Integer, nullable=True)

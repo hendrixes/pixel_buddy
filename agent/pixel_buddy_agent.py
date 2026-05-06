@@ -1,21 +1,9 @@
 import argparse
-import json
-import time
 from ipaddress import ip_address
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 
-from scapy.all import IP, TCP, sniff
-
-from agent.packet_window import PacketWindow
-from agent.ufw import block_ip
-
-
-FACES = {
-    "neutral": "(•‿•)",
-    "alert": "(⊙_⊙)",
-    "angry": "(ಠ_ಠ)",
-}
+from agent.config import AgentConfig, load_config, merge_config
+from agent.runtime import build_packet_handler, run_live_monitor
+from agent.tui import run_tui
 
 
 def positive_int(value):
@@ -36,90 +24,61 @@ def ip_address_arg(value):
         raise argparse.ArgumentTypeError(str(exc)) from exc
 
 
-def render_terminal(status, event=None):
-    face = FACES.get(status, FACES["neutral"])
-    print("\033c", end="")
-    print("pixel_buddy agent")
-    print()
-    print(f"  {face}")
-    print()
-    print(f"status: {status.upper()}")
-    if event:
-        print(f"event: {event['event_type']}")
-        print(f"source: {event['source_ip']}")
-        print(f"packets: {event['packet_count']}")
-        print(f"action: {event['action']}")
-
-
-def post_event(server, token, event):
-    body = json.dumps(event).encode("utf-8")
-    request = Request(
-        f"{server.rstrip('/')}/api/agent/events",
-        data=body,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-    with urlopen(request, timeout=5) as response:
-        return response.status
-
-
-def build_packet_handler(args, packet_window):
-    def handle_packet(packet):
-        if IP not in packet or TCP not in packet:
-            return
-
-        if packet[IP].dst != args.protected_ip:
-            return
-
-        source_ip = packet[IP].src
-        destination_port = packet[TCP].dport
-        event = packet_window.observe(source_ip, destination_port, time.time())
-        if not event:
-            return
-
-        try:
-            event["action"] = block_ip(source_ip, args.mode)
-        except Exception as exc:
-            event["action"] = "block_failed"
-            event["summary"] = f"{event['summary']} | block failed: {exc}"
-
-        render_terminal("angry" if event["action"] == "blocked" else "alert", event)
-
-        try:
-            post_event(args.server, args.token, event)
-        except (HTTPError, URLError, TimeoutError) as exc:
-            print(f"report failed: {exc}")
-
-    return handle_packet
-
-
-def parse_args():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--server", required=True)
-    parser.add_argument("--token", required=True)
-    parser.add_argument("--interface", required=True)
-    parser.add_argument("--protected-ip", type=ip_address_arg, required=True)
-    parser.add_argument("--mode", choices=["dry-run", "ufw"], default="dry-run")
-    parser.add_argument("--threshold", type=positive_int, default=50)
-    parser.add_argument("--window", type=positive_int, default=5)
-    return parser.parse_args()
+    parser.add_argument("--config")
+    parser.add_argument("--server")
+    parser.add_argument("--token")
+    parser.add_argument("--interface")
+    parser.add_argument("--protected-ip", type=ip_address_arg)
+    parser.add_argument("--mode", choices=["dry-run", "ufw"])
+    parser.add_argument("--threshold", type=positive_int)
+    parser.add_argument("--window", type=positive_int)
+    return parser.parse_args(argv)
+
+
+def build_config(args):
+    config = load_config(args.config)
+    return merge_config(
+        config,
+        {
+            "server": args.server,
+            "token": args.token,
+            "interface": args.interface,
+            "protected_ip": args.protected_ip,
+            "mode": args.mode,
+            "threshold": args.threshold,
+            "window": args.window,
+        },
+    )
+
+
+def has_cli_overrides(args):
+    return any(
+        (
+            args.server,
+            args.token,
+            args.interface,
+            args.protected_ip,
+        )
+    )
+
+
+def require_complete_config(config):
+    missing = config.missing_fields()
+    if missing:
+        raise SystemExit(f"missing agent config fields: {', '.join(missing)}")
 
 
 def main():
     args = parse_args()
-    render_terminal("neutral")
-    packet_window = PacketWindow(
-        threshold=args.threshold,
-        window_seconds=args.window,
-    )
-    sniff(
-        iface=args.interface,
-        prn=build_packet_handler(args, packet_window),
-        store=False,
-    )
+    if not has_cli_overrides(args):
+        run_tui(args.config)
+        return
+
+    config = build_config(args)
+    require_complete_config(config)
+    run_live_monitor(config)
 
 
 if __name__ == "__main__":

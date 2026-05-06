@@ -1,12 +1,22 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from werkzeug.utils import secure_filename
 
 from app.core import db, validate_csrf
 from app.firewall.model import Agent, BlockedIP
-from app.firewall.service import create_agent_for_user, validate_ip
+from app.firewall.pcap import analyze_pcap_file
+from app.firewall.service import (
+    create_agent_for_user,
+    record_firewall_event_for_user,
+    validate_ip,
+)
 
 
 firewall = Blueprint("firewall", __name__)
+ALLOWED_PCAP_EXTENSIONS = {".pcap", ".pcapng", ".cap"}
 
 
 def get_owned_blocked_ip(blocked_ip_id):
@@ -14,6 +24,19 @@ def get_owned_blocked_ip(blocked_ip_id):
         id=blocked_ip_id,
         user_id=current_user.id,
     ).first_or_404()
+
+
+def parse_positive_form_int(name, default):
+    raw_value = request.form.get(name, str(default)).strip()
+    try:
+        value = int(raw_value)
+    except ValueError:
+        raise ValueError(f"{name} precisa ser inteiro") from None
+
+    if value <= 0:
+        raise ValueError(f"{name} precisa ser positivo")
+
+    return value
 
 
 @firewall.route("/blocked-ips")
@@ -136,3 +159,59 @@ def create_agent():
         .all()
     )
     return render_template("firewall/agents.html", agents=records, created_token=token)
+
+
+@firewall.route("/pcaps/upload")
+@login_required
+def upload_pcap_form():
+    return render_template("firewall/pcap_upload.html", events=None)
+
+
+@firewall.route("/pcaps/upload", methods=["POST"])
+@login_required
+def upload_pcap():
+    validate_csrf()
+
+    uploaded_file = request.files.get("pcap_file")
+    if not uploaded_file or not uploaded_file.filename:
+        flash("Arquivo PCAP obrigatorio")
+        return redirect(url_for("firewall.upload_pcap_form"))
+
+    filename = secure_filename(uploaded_file.filename)
+    extension = Path(filename).suffix.lower()
+    if extension not in ALLOWED_PCAP_EXTENSIONS:
+        flash("Formato de arquivo invalido")
+        return redirect(url_for("firewall.upload_pcap_form"))
+
+    try:
+        threshold = parse_positive_form_int("threshold", 50)
+        window = parse_positive_form_int("window", 5)
+    except ValueError as exc:
+        flash(str(exc))
+        return redirect(url_for("firewall.upload_pcap_form"))
+
+    with TemporaryDirectory() as tmpdir:
+        pcap_path = Path(tmpdir) / filename
+        uploaded_file.save(pcap_path)
+
+        try:
+            detected_events = analyze_pcap_file(
+                pcap_path,
+                threshold=threshold,
+                window_seconds=window,
+            )
+        except Exception:
+            current_app.logger.exception("PCAP upload analysis failed")
+            flash("Nao foi possivel analisar o PCAP")
+            return redirect(url_for("firewall.upload_pcap_form"))
+
+    recorded_events = [
+        record_firewall_event_for_user(
+            current_user,
+            event,
+            source="pcap_upload",
+        )
+        for event in detected_events
+    ]
+
+    return render_template("firewall/pcap_upload.html", events=recorded_events)

@@ -1,11 +1,7 @@
 FACES = {
     "neutral": "(•‿•)",
-    "happy": "(^‿^)",
     "curious": "(◕‿◕)",
     "tired": "(⇀‿↼)",
-    "hungry": "(•︿•)",
-    "confused": "(#__#)",
-    "cool": "(⌐■_■)",
     "alert": "(⊙_⊙)",
     "angry": "(ಠ_ಠ)",
 }

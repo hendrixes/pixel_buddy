@@ -1,11 +1,9 @@
 from flask import Flask, redirect, render_template, send_file, url_for, request, flash
 from flask_login import current_user, login_required
 
-from app.api import api
 from app.auth import User, auth
 from app.firewall import agent_api, firewall
 from app.display import render_pet_screen
-from app.pets import pets
 from app.core import db
 from app.core import login_manager
 from app.core import register_csrf
@@ -16,10 +14,9 @@ app = Flask(__name__)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 app.config["SECRET_KEY"] = "chave-secreta"
+app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
 
-app.register_blueprint(pets)
 app.register_blueprint(auth)
-app.register_blueprint(api)
 app.register_blueprint(firewall)
 app.register_blueprint(agent_api)
 

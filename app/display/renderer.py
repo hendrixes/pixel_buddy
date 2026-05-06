@@ -26,6 +26,14 @@ def draw_centered_text(draw, y, text, font):
     draw.text((x, text_y), text, font=font, fill=FOREGROUND)
 
 
+def bottom_stats(pet):
+    return [
+        ("ENG", pet.energy),
+        ("XP", pet.network_xp),
+        ("CUR", pet.curiosity),
+    ]
+
+
 def render_pet_screen(pet):
     image = Image.new("L", (WIDTH, HEIGHT), BACKGROUND)
     draw = ImageDraw.Draw(image)
@@ -40,23 +48,14 @@ def render_pet_screen(pet):
     draw.line((8, 136, WIDTH - 9, 136), fill=FOREGROUND, width=1)
 
     draw.text((12, 8), f"{pet.name}>", font=text_font, fill=FOREGROUND)
-    draw.text((238, 8), f"XP {pet.network_xp}",
-              font=text_font, fill=FOREGROUND)
 
     face = get_face(pet.mood)
     draw_centered_text(draw, 82, face, face_font)
 
     draw.text((12, 116), f"MOOD {pet.mood.upper()}",
               font=small_font, fill=FOREGROUND)
-    draw.text((12, 146), f"ENG {pet.energy}", font=medium_font, fill=BLACK)
-    draw.text((88, 146), f"XP {pet.network_xp}", font=medium_font, fill=BLACK)
-    draw.text((156, 146), f"CUR {pet.curiosity}", font=medium_font, fill=BLACK)
-    draw.text(
-        (240, 146),
-        f"MOOD {pet.mood[:5].upper()}",
-        font=medium_font,
-        fill=BLACK,
-    )
+    for x, (label, value) in zip((12, 122, 232), bottom_stats(pet)):
+        draw.text((x, 146), f"{label} {value}", font=medium_font, fill=BLACK)
 
     image = image.point(lambda value: 0 if value < 210 else 255)
 
