@@ -6,6 +6,7 @@ from pathlib import Path
 
 
 VALID_MODES = {"dry-run", "ufw"}
+DEFAULT_IGNORED_PORTS = (22,)
 
 
 @dataclass
@@ -17,6 +18,7 @@ class AgentConfig:
     mode: str = "dry-run"
     threshold: int = 50
     window: int = 5
+    ignored_ports: tuple[int, ...] = DEFAULT_IGNORED_PORTS
 
     def missing_fields(self):
         fields = []
@@ -42,6 +44,16 @@ def default_config_path():
 
 
 def normalize_config(data):
+    raw_ignored_ports = data.get("ignored_ports", DEFAULT_IGNORED_PORTS)
+    if isinstance(raw_ignored_ports, str):
+        ignored_ports = tuple(
+            int(port.strip())
+            for port in raw_ignored_ports.split(",")
+            if port.strip()
+        )
+    else:
+        ignored_ports = tuple(int(port) for port in raw_ignored_ports)
+
     config = AgentConfig(
         server=str(data.get("server", "")).strip(),
         token=str(data.get("token", "")).strip(),
@@ -50,6 +62,7 @@ def normalize_config(data):
         mode=str(data.get("mode", "dry-run")).strip() or "dry-run",
         threshold=int(data.get("threshold", 50)),
         window=int(data.get("window", 5)),
+        ignored_ports=ignored_ports,
     )
 
     if config.mode not in VALID_MODES:
@@ -60,6 +73,9 @@ def normalize_config(data):
         raise ValueError("threshold must be positive")
     if config.window <= 0:
         raise ValueError("window must be positive")
+    for port in config.ignored_ports:
+        if port <= 0 or port > 65535:
+            raise ValueError("ignored ports must be between 1 and 65535")
 
     return config
 

@@ -45,16 +45,34 @@ def post_event(server, token, event):
         return response.status
 
 
-def handle_event(config, event, reporter=post_event, renderer=render_terminal):
+def should_ignore_event(config, event):
+    destination_port = event.get("destination_port")
+    return destination_port in set(config.ignored_ports)
+
+
+def handle_event(
+    config,
+    event,
+    reporter=post_event,
+    renderer=render_terminal,
+    blocker=block_ip,
+):
     handled_event = dict(event)
 
-    try:
-        handled_event["action"] = block_ip(handled_event["source_ip"], config.mode)
-    except Exception as exc:
-        handled_event["action"] = "block_failed"
+    if should_ignore_event(config, handled_event):
+        handled_event["action"] = "reported"
         handled_event["summary"] = (
-            f"{handled_event['summary']} | block failed: {exc}"
+            f"{handled_event['summary']} | ignored management port "
+            f"{handled_event['destination_port']}"
         )
+    else:
+        try:
+            handled_event["action"] = blocker(handled_event["source_ip"], config.mode)
+        except Exception as exc:
+            handled_event["action"] = "block_failed"
+            handled_event["summary"] = (
+                f"{handled_event['summary']} | block failed: {exc}"
+            )
 
     status = "angry" if handled_event["action"] == "blocked" else "alert"
     renderer(status, handled_event)
@@ -72,6 +90,7 @@ def build_packet_handler(config, analyzer=None, event_handler=handle_event):
         protected_ip=config.protected_ip,
         threshold=config.threshold,
         window_seconds=config.window,
+        ignored_ports=config.ignored_ports,
     )
 
     def handle_packet(packet):

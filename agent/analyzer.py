@@ -3,12 +3,20 @@ from ipaddress import ip_address
 
 from scapy.all import IP, TCP
 
+from agent.config import DEFAULT_IGNORED_PORTS
 from agent.packet_window import PacketWindow
 
 
 class PacketAnalyzer:
-    def __init__(self, protected_ip, threshold=50, window_seconds=5):
+    def __init__(
+        self,
+        protected_ip,
+        threshold=50,
+        window_seconds=5,
+        ignored_ports=DEFAULT_IGNORED_PORTS,
+    ):
         self.protected_ip = str(ip_address(protected_ip))
+        self.ignored_ports = set(ignored_ports)
         self.packet_window = PacketWindow(
             threshold=threshold,
             window_seconds=window_seconds,
@@ -19,6 +27,9 @@ class PacketAnalyzer:
             return None
 
         if packet[IP].dst != self.protected_ip:
+            return None
+
+        if packet[TCP].dport in self.ignored_ports:
             return None
 
         packet_time = float(getattr(packet, "time", time.time()))

@@ -44,6 +44,7 @@ def draw_menu(stdscr, config, message="", last_event=None):
         f"protected ip: {config.protected_ip or '-'}",
         f"mode: {config.mode}",
         f"threshold/window: {config.threshold}/{config.window}s",
+        f"ignored ports: {', '.join(str(port) for port in config.ignored_ports)}",
         "",
         "[s] start live monitor",
         "[c] configure",
