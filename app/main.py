@@ -11,6 +11,9 @@ from app.pets import Pet
 from app.pets.service import tick_pet
 
 app = Flask(__name__)
+THEME_COOKIE = "pet_theme"
+DEFAULT_THEME = "dark"
+VALID_THEMES = {"dark", "light"}
 
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL",
@@ -33,9 +36,44 @@ login_manager.init_app(app)
 register_csrf(app)
 
 
+def get_current_theme():
+    theme = request.cookies.get(THEME_COOKIE, DEFAULT_THEME)
+    if theme not in VALID_THEMES:
+        return DEFAULT_THEME
+
+    return theme
+
+
+@app.context_processor
+def inject_theme():
+    current_theme = get_current_theme()
+    next_theme = "light" if current_theme == "dark" else "dark"
+    return {"current_theme": current_theme, "next_theme": next_theme}
+
+
 @app.route("/")
 def index():
     return redirect(url_for("game"))
+
+
+@app.route("/theme", methods=["POST"])
+@login_required
+def set_theme():
+    validate_csrf()
+    theme = request.form.get("theme", DEFAULT_THEME)
+    if theme not in VALID_THEMES:
+        theme = DEFAULT_THEME
+
+    response = redirect(url_for("game"))
+    response.set_cookie(
+        THEME_COOKIE,
+        theme,
+        max_age=60 * 60 * 24 * 365,
+        httponly=True,
+        samesite="Lax",
+        secure=app.config["SESSION_COOKIE_SECURE"],
+    )
+    return response
 
 
 @app.route("/game/setup", methods=["POST"])
@@ -66,7 +104,7 @@ def render_screen():
     if tick_pet(current_user.pet):
         db.session.commit()
 
-    image = render_pet_screen(current_user.pet)
+    image = render_pet_screen(current_user.pet, theme=get_current_theme())
 
     return send_file(image, mimetype="image/png", max_age=0)
 

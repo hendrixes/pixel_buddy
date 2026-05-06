@@ -8,7 +8,7 @@ from app.auth.model import User
 from app.core import db, login_manager, register_csrf
 from app.core.csrf import CSRF_SESSION_KEY
 from app.firewall import agent_api, firewall
-from app.main import game, game_setup, leaderboard
+from app.main import game, game_setup, inject_theme, leaderboard, render_screen, set_theme
 from app.pets.model import Pet
 
 
@@ -25,6 +25,7 @@ def app():
     db.init_app(test_app)
     login_manager.init_app(test_app)
     register_csrf(test_app)
+    test_app.context_processor(inject_theme)
     test_app.register_blueprint(auth)
     test_app.register_blueprint(firewall)
     test_app.register_blueprint(agent_api)
@@ -35,7 +36,9 @@ def app():
 
     test_app.add_url_rule("/game", view_func=game)
     test_app.add_url_rule("/game/setup", methods=["POST"], view_func=game_setup)
+    test_app.add_url_rule("/game/screen.png", view_func=render_screen)
     test_app.add_url_rule("/leaderboard", view_func=leaderboard)
+    test_app.add_url_rule("/theme", methods=["POST"], view_func=set_theme)
 
     with test_app.app_context():
         db.create_all()
