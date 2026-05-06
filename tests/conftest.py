@@ -4,7 +4,8 @@ from flask import Flask
 from app.api import api
 from app.auth import auth
 from app.auth.model import User
-from app.core import db, login_manager
+from app.core import db, login_manager, register_csrf
+from app.firewall import firewall
 from app.pets import pets
 from app.pets.model import Pet
 
@@ -20,9 +21,11 @@ def app():
 
     db.init_app(test_app)
     login_manager.init_app(test_app)
+    register_csrf(test_app)
     test_app.register_blueprint(pets)
     test_app.register_blueprint(auth)
     test_app.register_blueprint(api)
+    test_app.register_blueprint(firewall)
 
     @test_app.route("/")
     def index():

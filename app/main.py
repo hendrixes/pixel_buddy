@@ -3,10 +3,12 @@ from flask_login import current_user, login_required
 
 from app.api import api
 from app.auth import auth
+from app.firewall import firewall
 from app.display import render_pet_screen
 from app.pets import pets
 from app.core import db
 from app.core import login_manager
+from app.core import register_csrf
 from app.pets import Pet
 from app.pets.service import tick_pet
 
@@ -18,9 +20,11 @@ app.config["SECRET_KEY"] = "chave-secreta"
 app.register_blueprint(pets)
 app.register_blueprint(auth)
 app.register_blueprint(api)
+app.register_blueprint(firewall)
 
 db.init_app(app)
 login_manager.init_app(app)
+register_csrf(app)
 
 
 @app.route("/")

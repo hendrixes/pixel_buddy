@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Blocked IP - pixel_buddy{% endblock %}
+{% block content %}
+  <section class="auth-panel">
+    <h1>{{ "editar" if blocked_ip else "novo" }} bloqueio</h1>
+    <form method="post" action="{{ '/blocked-ips/' ~ blocked_ip.id ~ '/edit' if blocked_ip else '/blocked-ips' }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>
+        IP
+        <input name="ip_address" value="{{ blocked_ip.ip_address if blocked_ip else '' }}" required>
+      </label>
+      <label>
+        Motivo
+        <input name="reason" value="{{ blocked_ip.reason if blocked_ip else '' }}" required>
+      </label>
+      <label>
+        Observacoes
+        <input name="notes" value="{{ blocked_ip.notes if blocked_ip else '' }}">
+      </label>
+      {% if blocked_ip %}
+        <label>
+          Ativo
+          <input type="checkbox" name="active" {% if blocked_ip.active %}checked{% endif %}>
+        </label>
+      {% endif %}
+      <button type="submit">Salvar</button>
+    </form>
+  </section>
+{% endblock %}
