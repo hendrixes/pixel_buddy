@@ -17,6 +17,21 @@ class User(UserMixin, db.Model):
         uselist=False,
         cascade="all, delete-orphan",
     )
+    agents = db.relationship(
+        "Agent",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    firewall_events = db.relationship(
+        "FirewallEvent",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    blocked_ips = db.relationship(
+        "BlockedIP",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)

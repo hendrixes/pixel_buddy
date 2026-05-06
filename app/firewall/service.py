@@ -1,0 +1,147 @@
+from hashlib import sha256
+from ipaddress import ip_address
+from secrets import token_urlsafe
+
+from app.core import db
+from app.firewall.model import Agent, BlockedIP, FirewallEvent, utc_now
+from app.pets.service import clamp
+
+
+VALID_ACTIONS = {"reported", "blocked", "block_failed"}
+
+
+def hash_agent_token(token):
+    return sha256(token.encode("utf-8")).hexdigest()
+
+
+def create_agent_for_user(user, name, mode="dry-run"):
+    token = token_urlsafe(32)
+    agent = Agent(
+        user=user,
+        name=name.strip(),
+        mode=mode,
+        token_hash=hash_agent_token(token),
+    )
+    db.session.add(agent)
+    db.session.commit()
+    return agent, token
+
+
+def authenticate_agent_token(token):
+    if not token:
+        return None
+
+    token_hash = hash_agent_token(token)
+    agent = Agent.query.filter_by(token_hash=token_hash).first()
+
+    if agent:
+        agent.last_seen_at = utc_now()
+
+    return agent
+
+
+def validate_ip(value):
+    return str(ip_address(value))
+
+
+def validate_packet_count(value):
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError("packet_count must be an integer")
+
+    if value < 0:
+        raise ValueError("packet_count must be greater than or equal to 0")
+
+    return value
+
+
+def validate_destination_port(value):
+    if value is None or value == "":
+        return None
+
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError("destination_port must be an integer")
+
+    if value < 0 or value > 65535:
+        raise ValueError("destination_port must be between 0 and 65535")
+
+    return value
+
+
+def validate_action(value):
+    if value not in VALID_ACTIONS:
+        raise ValueError("action is not supported")
+
+    return value
+
+
+def validate_event_type(value):
+    if not isinstance(value, str):
+        raise ValueError("event_type must be a string")
+
+    event_type = value.strip()
+    if not event_type:
+        raise ValueError("event_type is required")
+
+    if len(event_type) > 40:
+        raise ValueError("event_type must be 40 characters or fewer")
+
+    return event_type
+
+
+def update_pet_from_firewall_event(pet, event):
+    if not pet:
+        return
+
+    xp_gain = max(1, min(10, event.packet_count // 20))
+    pet.network_xp += xp_gain
+    pet.curiosity = clamp(pet.curiosity + 8)
+    pet.energy = clamp(pet.energy - 5)
+
+    if event.action == "blocked":
+        pet.mood = "angry"
+        pet.happiness = clamp(pet.happiness + 4)
+    else:
+        pet.mood = "alert"
+
+
+def record_firewall_event(agent, payload):
+    source_ip = validate_ip(payload["source_ip"])
+    action = validate_action(payload.get("action", "reported"))
+    packet_count = validate_packet_count(payload.get("packet_count", 0))
+    destination_port = validate_destination_port(payload.get("destination_port"))
+    event_type = validate_event_type(payload.get("event_type"))
+    event = FirewallEvent(
+        user_id=agent.user_id,
+        agent_id=agent.id,
+        event_type=event_type,
+        source_ip=source_ip,
+        destination_port=destination_port,
+        packet_count=packet_count,
+        action=action,
+        summary=payload.get("summary", ""),
+    )
+    db.session.add(event)
+
+    if action == "blocked":
+        existing_block = BlockedIP.query.filter_by(
+            user_id=agent.user_id,
+            ip_address=source_ip,
+            active=True,
+        ).first()
+
+        if not existing_block:
+            db.session.add(
+                BlockedIP(
+                    user_id=agent.user_id,
+                    agent_id=agent.id,
+                    ip_address=source_ip,
+                    reason=event.event_type,
+                    notes=event.summary,
+                    source="agent",
+                    active=True,
+                )
+            )
+
+    update_pet_from_firewall_event(agent.user.pet, event)
+    db.session.commit()
+    return event
