@@ -7,7 +7,7 @@ from app.firewall.model import Agent, BlockedIP, FirewallEvent, utc_now
 from app.pets.service import clamp
 
 
-VALID_ACTIONS = {"reported", "blocked", "block_failed"}
+VALID_ACTIONS = {"reported", "blocked", "block_failed", "unblocked"}
 VALID_EVENT_SOURCES = {"agent", "pcap_upload"}
 
 

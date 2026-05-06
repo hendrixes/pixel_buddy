@@ -47,3 +47,28 @@ def block_ip(source_ip, mode):
         )
 
     return "blocked"
+
+
+def unblock_ip(source_ip, mode):
+    normalized_ip = normalize_ip(source_ip)
+
+    if mode == "dry-run":
+        return "reported"
+
+    if mode != "ufw":
+        raise ValueError(f"unsupported mode: {mode}")
+
+    command = [ufw_command(), "delete", "deny", "from", normalized_ip]
+    result = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        output = (result.stderr or result.stdout or "").strip()
+        raise FirewallCommandError(
+            f"ufw failed with exit code {result.returncode}: {output}"
+        )
+
+    return "unblocked"

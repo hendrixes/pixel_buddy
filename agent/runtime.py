@@ -6,7 +6,7 @@ import time
 from scapy.all import sniff
 
 from agent.analyzer import PacketAnalyzer
-from agent.ufw import block_ip
+from agent.ufw import block_ip, unblock_ip
 
 
 FACES = {
@@ -72,11 +72,23 @@ def blocklist_event(rule, action, summary):
     }
 
 
+def removed_blocklist_event(source_ip, action, summary):
+    return {
+        "event_type": "manual_block_removed",
+        "source_ip": source_ip,
+        "destination_port": None,
+        "packet_count": 0,
+        "action": action,
+        "summary": summary,
+    }
+
+
 def sync_blocklist(
     config,
     applied_ips=None,
     fetcher=fetch_blocked_ips,
     blocker=block_ip,
+    unblocker=unblock_ip,
     reporter=post_event,
     renderer=render_terminal,
 ):
@@ -111,6 +123,26 @@ def sync_blocklist(
 
         if action in {"blocked", "reported"}:
             synced_ips.add(source_ip)
+
+    active_ips = {rule["ip_address"] for rule in rules}
+    for source_ip in sorted(synced_ips - active_ips):
+        try:
+            action = unblocker(source_ip, config.mode)
+            summary = f"manual blocklist rule for {source_ip} removed"
+        except Exception as exc:
+            action = "block_failed"
+            summary = f"manual blocklist rule for {source_ip} remove failed: {exc}"
+
+        event = removed_blocklist_event(source_ip, action, summary)
+        renderer("alert", event)
+
+        try:
+            reporter(config.server, config.token, event)
+        except (HTTPError, URLError, TimeoutError) as exc:
+            print(f"report failed: {exc}")
+
+        if action in {"reported", "unblocked"}:
+            synced_ips.remove(source_ip)
 
     return synced_ips
 

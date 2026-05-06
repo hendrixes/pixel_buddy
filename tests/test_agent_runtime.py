@@ -168,3 +168,42 @@ def test_sync_blocklist_does_not_reapply_synced_rules():
     assert synced == {"192.168.56.10"}
     assert blocked == []
     assert reported == []
+
+
+def test_sync_blocklist_removes_rules_missing_from_api():
+    unblocked = []
+    reported = []
+    config = AgentConfig(
+        server="http://127.0.0.1:5000",
+        token="token",
+        interface="eth0",
+        protected_ip="192.168.56.20",
+        mode="ufw",
+    )
+
+    synced = sync_blocklist(
+        config,
+        applied_ips={"192.168.56.10", "192.168.56.11"},
+        fetcher=lambda _server, _token: [
+            {"id": 8, "ip_address": "192.168.56.11", "reason": "manual"}
+        ],
+        blocker=lambda source_ip, mode: "blocked",
+        unblocker=lambda source_ip, mode: (
+            unblocked.append((source_ip, mode)) or "unblocked"
+        ),
+        reporter=lambda _server, _token, payload: reported.append(payload) or 201,
+        renderer=lambda _status, _payload: None,
+    )
+
+    assert synced == {"192.168.56.11"}
+    assert unblocked == [("192.168.56.10", "ufw")]
+    assert reported == [
+        {
+            "event_type": "manual_block_removed",
+            "source_ip": "192.168.56.10",
+            "destination_port": None,
+            "packet_count": 0,
+            "action": "unblocked",
+            "summary": "manual blocklist rule for 192.168.56.10 removed",
+        }
+    ]

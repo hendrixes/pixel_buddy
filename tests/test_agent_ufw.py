@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from agent.ufw import FirewallCommandError, block_ip
+from agent.ufw import FirewallCommandError, block_ip, unblock_ip
 
 
 def test_block_ip_dry_run_validates_ip_and_reports():
@@ -57,3 +57,31 @@ def test_block_ip_ufw_mode_reports_stderr(monkeypatch):
 
     with pytest.raises(FirewallCommandError, match="ERROR: problem running ufw"):
         block_ip("192.168.56.10", "ufw")
+
+
+def test_unblock_ip_ufw_mode_runs_delete_deny_command(monkeypatch):
+    calls = []
+    monkeypatch.setattr("agent.ufw.ufw_command", lambda: "ufw")
+
+    def fake_run(command, check, capture_output, text):
+        calls.append(
+            {
+                "command": command,
+                "check": check,
+                "capture_output": capture_output,
+                "text": text,
+            }
+        )
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    assert unblock_ip("192.168.56.10", "ufw") == "unblocked"
+    assert calls == [
+        {
+            "command": ["ufw", "delete", "deny", "from", "192.168.56.10"],
+            "check": False,
+            "capture_output": True,
+            "text": True,
+        }
+    ]

@@ -29,6 +29,10 @@ agent token and applied locally:
 - `dry-run`: reports that it would apply the rule
 - `ufw`: runs `ufw deny from <ip>`
 
+If an IP is removed from the active web blocklist while the agent is running, the
+next sync removes the local rule. In `ufw` mode it runs
+`ufw delete deny from <ip>`.
+
 TUI actions:
 
 - `s`: start live Scapy monitoring
